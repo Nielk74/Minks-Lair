@@ -1,6 +1,7 @@
 package main
 
 import (
+	"cosmink/infra/controller"
 	"encoding/json"
 	"net/http"
 )
@@ -11,6 +12,7 @@ func main() {
 		w.Header().Set("Content-Type", "application/json")
 		json.NewEncoder(w).Encode(map[string]string{"message": "pong"})
 	})
-
+	// route start with user wildcard
+	http.HandleFunc("/user/", controller.UserHandler)
 	http.ListenAndServe(":8080", nil)
 }

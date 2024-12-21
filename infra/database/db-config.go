@@ -1,4 +1,4 @@
-package main
+package database
 
 import (
 	"database/sql"
@@ -39,6 +39,17 @@ func mergeEnv() map[string]string {
 	return mergedConfig
 }
 
+func GetConnection() *sql.DB {
+	envConfig := mergeEnv()
+	connStr := fmt.Sprintf("host=%s port=%s user=%s password=%s dbname=%s sslmode=disable",
+		envConfig["DB_HOST"], envConfig["DB_PORT"], envConfig["DB_USER"], envConfig["DB_PASSWORD"], envConfig["DB_NAME"])
+	db, err := sql.Open("postgres", connStr)
+	if err != nil {
+		log.Fatal(err)
+	}
+	return db
+}
+
 func (c *Config) testConnection() {
 	connStr := fmt.Sprintf("host=%s port=%s user=%s password=%s dbname=%s sslmode=disable",
 		c.Host, c.Port, c.User, c.Password, c.Database)
@@ -66,8 +77,4 @@ func RunTestConnection() {
 		Database: envConfig["DB_NAME"],
 	}
 	config.testConnection()
-}
-
-func main() {
-	RunTestConnection()
 }
