@@ -1,7 +1,7 @@
 package main
 
 import (
-	"cosmink/infra/controller"
+	"cosmink/auth/infra/controller"
 	"encoding/json"
 	"net/http"
 )

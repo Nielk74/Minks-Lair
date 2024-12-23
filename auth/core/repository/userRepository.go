@@ -1,12 +1,12 @@
 package repository
 
 import (
-	"cosmink/core/entity"
-	"cosmink/infra/database"
+	"cosmink/auth/core/entity"
+	"cosmink/auth/infra/database"
 	"fmt"
 )
 
-func RegisterUser(user entity.User) (bool, error) {
+func Save(user entity.User) (bool, error) {
 	db := database.GetConnection()
 	defer db.Close()
 

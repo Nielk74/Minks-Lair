@@ -43,6 +43,7 @@ func GetConnection() *sql.DB {
 	envConfig := mergeEnv()
 	connStr := fmt.Sprintf("host=%s port=%s user=%s password=%s dbname=%s sslmode=disable",
 		envConfig["DB_HOST"], envConfig["DB_PORT"], envConfig["DB_USER"], envConfig["DB_PASSWORD"], envConfig["DB_NAME"])
+	log.Println(fmt.Sprintf("Connecting to database: %s", connStr))
 	db, err := sql.Open("postgres", connStr)
 	if err != nil {
 		log.Fatal(err)
