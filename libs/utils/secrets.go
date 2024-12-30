@@ -6,7 +6,7 @@ import (
 	"github.com/joho/godotenv"
 )
 
-func GetEnv() map[string]string {
+func GetEnv() map[string]string { // We should not put this function in public scope
 	mergedConfig := make(map[string]string)
 
 	for _, env := range os.Environ() {
@@ -24,4 +24,9 @@ func GetEnv() map[string]string {
 		}
 	}
 	return mergedConfig
+}
+
+func GetEnvValue(key string) string {
+	env := GetEnv()
+	return env[key]
 }
