@@ -7,12 +7,7 @@ import (
 	"net/http"
 )
 
-type IController interface {
-	RegisterRoutes(server *route.Server)
-}
-
 func main() {
-	var control IController
 	http.HandleFunc("/pong", func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusOK)
 		w.Header().Set("Content-Type", "application/json")
@@ -20,8 +15,15 @@ func main() {
 	})
 	server := route.NewServer()
 	http.HandleFunc("/", server.ServeHTTP)
-	userController := controller.UserController{}
-	control = userController
-	control.RegisterRoutes(server)
+
+	registerControllers(server, []controller.Registerable{
+		&controller.UserController{},
+	})
 	http.ListenAndServe(":8080", nil)
+}
+
+func registerControllers(server *route.Server, controllers []controller.Registerable) {
+	for _, c := range controllers {
+		c.RegisterRoutes(server)
+	}
 }

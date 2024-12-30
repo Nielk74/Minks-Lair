@@ -1,2 +1,3 @@
 .env
 vendor
+docker-gs-ping
