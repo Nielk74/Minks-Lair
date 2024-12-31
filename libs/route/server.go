@@ -1,74 +1,57 @@
 package route
 
 import (
-	"encoding/json"
 	"fmt"
 	"log"
 	"net/http"
-)
 
-// registerRoute nethod; path; handler
-const (
-	GET     = "GET"
-	HEAD    = "HEAD"
-	POST    = "POST"
-	PUT     = "PUT"
-	PATCH   = "PATCH"
-	DELETE  = "DELETE"
-	CONNECT = "CONNECT"
-	OPTIONS = "OPTIONS"
-	TRACE   = "TRACE"
+	socketio "github.com/googollee/go-socket.io"
 )
 
 type Server struct {
-	routes   map[string]map[string]http.HandlerFunc
-	NotFound http.HandlerFunc
-	OnErr    http.HandlerFunc
+	SocketIoServer *socketio.Server
+	routes         map[string]map[string]func(socketio.Conn, string)
+	NotFound       func(socketio.Conn, string)
+	OnErr          func(socketio.Conn, string)
 }
 
-func (s *Server) RegisterRoute(path string, method string, handler func(http.ResponseWriter, *http.Request)) bool {
-	if s.routes[method] == nil {
-		s.routes[method] = make(map[string]http.HandlerFunc)
+func (server *Server) RegisterEvent(namespace string, event string, handler func(socketio.Conn, string)) error {
+	if _, ok := server.routes[namespace]; !ok {
+		server.routes[namespace] = make(map[string]func(socketio.Conn, string))
 	}
-	s.routes[method][path] = handler
-	return true
+	if _, ok := server.routes[namespace][event]; !ok {
+		server.routes[namespace][event] = handler
+		server.SocketIoServer.OnEvent(namespace, event, handler)
+		log.Printf("Event %s registered on %s", event, namespace)
+		return nil
+	}
+	return fmt.Errorf("event already exists")
+
 }
 
 func NewServer() *Server {
+	SocketIoServer := socketio.NewServer(nil)
 	return &Server{
-		routes:   make(map[string]map[string]http.HandlerFunc),
-		NotFound: http.NotFound,
-		OnErr:    OnErrHandler,
+		SocketIoServer: SocketIoServer,
+		routes:         make(map[string]map[string]func(socketio.Conn, string)),
+		NotFound:       NotFoundHandler,
+		OnErr:          OnErrHandler,
 	}
 }
 
-func OnErrHandler(w http.ResponseWriter, r *http.Request) {
-	simulatedError := func() error {
-		return fmt.Errorf("an example error occurred")
-	}
-	err := simulatedError()
-	if err != nil {
-		errObj := struct {
-			Error string `json:"error"`
-		}{
-			Error: err.Error(),
-		}
-		w.Header().Set("Content-Type", "application/json")
-		w.WriteHeader(http.StatusInternalServerError)
-		if err := json.NewEncoder(w).Encode(errObj); err != nil {
-			log.Printf("failed to encode error: %s\n", err)
-		}
-		return
-	}
-	w.WriteHeader(http.StatusOK)
-	w.Write([]byte("Request handled successfully"))
+func (server *Server) Serve() {
+	go server.SocketIoServer.Serve()
+	defer server.SocketIoServer.Close()
+	http.Handle("/socket.io/", server.SocketIoServer)
+	http.ListenAndServe(":8080", nil)
 }
 
-func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
-	handler, ok := s.routes[r.Method][r.URL.Path]
-	if !ok {
-		s.NotFound(w, r)
-		return
-	}
-	handler(w, r)
+func NotFoundHandler(socket socketio.Conn, message string) {
+	log.Printf("404 Not Found: %s", message)
+	socket.Emit("error", "404 Not Found")
+}
+
+func OnErrHandler(socket socketio.Conn, message string) {
+	log.Printf("Internal Server Error: %s", message)
+	socket.Emit("error", "Internal Server Error")
 }

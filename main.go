@@ -3,23 +3,23 @@ package main
 import (
 	"cosmink/auth/infra/controller"
 	"cosmink/libs/route"
-	"encoding/json"
-	"net/http"
+	"log"
+
+	socketio "github.com/googollee/go-socket.io"
 )
 
 func main() {
-	http.HandleFunc("/pong", func(w http.ResponseWriter, r *http.Request) {
-		w.WriteHeader(http.StatusOK)
-		w.Header().Set("Content-Type", "application/json")
-		json.NewEncoder(w).Encode(map[string]string{"message": "pong"})
-	})
-	server := route.NewServer()
-	http.HandleFunc("/", server.ServeHTTP)
 
+	server := route.NewServer()
+	server.SocketIoServer.OnConnect("/", func(socket socketio.Conn) error {
+		log.Printf("connected: %s", socket.ID())
+		return nil
+	})
 	registerControllers(server, []controller.Registerable{
 		&controller.UserController{},
 	})
-	http.ListenAndServe(":8080", nil)
+	server.Serve()
+
 }
 
 func registerControllers(server *route.Server, controllers []controller.Registerable) {
